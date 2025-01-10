@@ -2,10 +2,5 @@
 version = 1
 
 [[package]]
-name = "starklings"
+name = "devotecontract"
 version = "0.1.0"
-
-[dependencies]
-starknet = ">=2.8.0"
-
-[[target.starknet-contract]]
