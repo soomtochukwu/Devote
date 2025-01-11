@@ -1,59 +1,6 @@
 use core::dict::Felt252Dict;
-
-#[derive(Drop, PartialEq)]
-enum ProposalState {
-    draft, 
-    in_votation, 
-    finalized
-}
-
-#[derive(Drop)]
-struct ProposalVoteTypeStruct {
-    vote_type: felt252,
-    count: u256
-}
-
-#[derive(Drop)]
-struct ProposalVoterStruct {
-    wallet_id: felt252,
-    has_voted: bool,
-    rol: felt252
-}
-
-#[derive(Drop)]
-struct Proposal {
-    id: felt252,
-    name: felt252,
-    state: ProposalState,
-    type_votes: Felt252Dict<ProposalVoteTypeStruct>,
-    voters: Felt252Dict<ProposalVoterStruct>
-}
-
-#[derive(Drop, PartialEq)]
-enum PersonProposalRolState {
-    view, 
-    vote, 
-    edit
-}
-
-struct PersonProposalStruct {
-    proposal_id: felt252,
-    rol: PersonProposalRolState
-}
-
-#[derive(Drop)]
-struct Person {
-    wallet_id: felt252,
-    id_number: felt252,
-    rol: felt252,
-    proposals: Felt252Dict<PersonProposalStruct>
-}
-
-#[derive(Drop)]
-struct NewVoter {
-    wallet_id: felt252,
-    rol: felt252
-}
+use src::person::Person;
+use src::proposal::Proposal;
 
 #[starknet::interface]
 trait IDeVote<ContractState> {    
