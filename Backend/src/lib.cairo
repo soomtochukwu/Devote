@@ -1,4 +1,5 @@
 mod person;
+mod proposal;
 
 fn main() -> u32 {
     fib(16)
