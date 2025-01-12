@@ -1,61 +1,55 @@
+use crate::person::{PersonProposalRolState};
+
 use core::dict::Felt252Dict;
 use core::nullable::{NullableTrait, match_nullable, FromNullableResult};
+use core::fmt::{Display, Formatter, Error};
 
-#[derive(Drop, PartialEq, Clone, Serde, Destruct, Copy)]
+
+#[derive(PartialEq, Clone, Serde, Destruct, Copy)]
 enum ProposalState {
     draft, 
     in_votation, 
     finalized
 }
 
+impl ProposalStateDisplay of Display<ProposalState> {
+    fn fmt(self: @ProposalState, ref f: Formatter) -> Result<(), Error> {
+        let result = match *self {
+            ProposalState::draft => write!(f, "draft"),
+            ProposalState::in_votation => write!(f, "in_votation"),
+            ProposalState::finalized => write!(f, "finalized"),
+        };
+        result
+    }
+}
+
 #[derive(Drop, PartialEq, Clone, Serde, Destruct, Copy)]
 struct ProposalVoterStruct {
-    has_voted: bool,
-    rol: felt252
+    pub has_voted: bool,
+    pub rol: PersonProposalRolState
 }
 
 #[derive(Copy, Drop)]
 struct ProposalVoteTypeStruct {
-    vote_type: felt252,
-    count: u256
+    pub vote_type: felt252,
+    pub count: u256
 }
 
-struct Proposal {
-    id: felt252,
-    name: felt252,
-    state: ProposalState,
+#[derive(Destruct)]
+pub struct Proposal {
+    pub id: felt252,
+    pub name: felt252,
+    pub state: ProposalState,
     type_votes: Array<ProposalVoteTypeStruct>,
     voters: Felt252Dict<Nullable<ProposalVoterStruct>>
 }
 
-impl ProposalDestruct<ProposalVoterStruct, +Drop<ProposalVoterStruct>, +Drop<Felt252Dict<u256>>, +Destruct<Felt252Dict<u256>>, +Felt252DictValue<ProposalVoterStruct>> of Destruct<Proposal> {
-    fn destruct(self: Proposal) nopanic {
-        self.voters.squash();
-    }
-}
-
-
-pub trait ProposalTrait {
-    fn create_proposal(id: felt252, name: felt252) -> Proposal;
-    fn add_vote_type(ref self: Proposal, vote_type: felt252);
-    fn remove_vote_type(ref self: Proposal, vote_type: felt252);
-    fn add_voter(ref self: Proposal, wallet_id: felt252, rol: felt252);
-    fn get_voter(ref self: Proposal, wallet_id: felt252) -> Option<ProposalVoterStruct>;
-    fn remove_voter(ref self: Proposal, wallet_id: felt252);
-}
-
-impl ProposalImpl<+Drop<Proposal>, +Copy<Proposal>> of ProposalTrait {
-    fn create_proposal(id: felt252, name: felt252) -> Proposal {
-        Proposal {
-            id: id,
-            name: name,
-            state: ProposalState::draft,
-            type_votes: Default::default(),
-            voters: Default::default()
-        }
-    }
-
+#[generate_trait]
+pub impl ProposalImpl of ProposalTrait {
     fn add_vote_type(ref self: Proposal, vote_type: felt252) {
+        if self.state != ProposalState::draft {
+            return;
+        };
         let temp = ProposalVoteTypeStruct {
             vote_type: vote_type,
             count: 0
@@ -63,7 +57,20 @@ impl ProposalImpl<+Drop<Proposal>, +Copy<Proposal>> of ProposalTrait {
         self.type_votes.append(temp);
     }
 
+    fn get_all_vote_types(ref self: Proposal) -> Array<ProposalVoteTypeStruct> {
+        let mut vote_types = ArrayTrait::<ProposalVoteTypeStruct>::new();
+        let mut idx = 0;
+        while idx < self.type_votes.len() {
+            vote_types.append(*self.type_votes[idx]);
+            idx += 1;
+        };
+        return vote_types;
+    }
+
     fn remove_vote_type(ref self: Proposal, vote_type: felt252) {
+        if self.state != ProposalState::draft {
+            return;
+        };
         let mut vote_types = ArrayTrait::<ProposalVoteTypeStruct>::new();
         let mut idx = 0;
         while idx < self.type_votes.len() {
@@ -76,7 +83,21 @@ impl ProposalImpl<+Drop<Proposal>, +Copy<Proposal>> of ProposalTrait {
         self.type_votes = vote_types;
     }
 
-    fn add_voter(ref self: Proposal, wallet_id: felt252, rol: felt252) {
+    fn add_voter(ref self: Proposal, wallet_id: felt252, rol: PersonProposalRolState) {
+        if self.state != ProposalState::draft {
+            return;
+        };
+        let new_voter = ProposalVoterStruct {
+            has_voted: false,
+            rol: rol,
+        };
+        self.voters.insert(wallet_id, NullableTrait::new(new_voter));
+    }
+
+    fn modify_voter(ref self: Proposal, wallet_id: felt252, rol: PersonProposalRolState) {
+        if self.state != ProposalState::draft {
+            return;
+        };
         let new_voter = ProposalVoterStruct {
             has_voted: false,
             rol: rol,
@@ -85,19 +106,109 @@ impl ProposalImpl<+Drop<Proposal>, +Copy<Proposal>> of ProposalTrait {
     }
 
     fn get_voter(ref self: Proposal, wallet_id: felt252) -> Option<ProposalVoterStruct> {
-        let voter = self.voters.get(wallet_id).deref();
-        if voter.rol != 'none' {
-            return Option::None;
-        } else {
-            return Option::Some(voter);
-        }
+        let voterElement = self.voters.get(wallet_id);
+        let result =  match match_nullable(voterElement) {
+            FromNullableResult::Null => Option::None,
+            FromNullableResult::NotNull(val) => {
+                let voter = val.deref();
+                if voter.rol == PersonProposalRolState::none {
+                    return Option::None;
+                } else {
+                    return Option::Some(voter);
+                }
+            },
+        };
+        return result;
     }
 
     fn remove_voter(ref self: Proposal, wallet_id: felt252) {
+        if self.state != ProposalState::draft {
+            return;
+        };
         let new_voter = ProposalVoterStruct {
             has_voted: false,
-            rol: 'none',
+            rol: PersonProposalRolState::none,
         };
         self.voters.insert(wallet_id, NullableTrait::new(new_voter));
+    }
+
+    fn start_votation(ref self: Proposal) {
+        if self.state != ProposalState::draft {
+            return;
+        };
+        self.state = ProposalState::in_votation;
+    }
+
+    fn vote(ref self: Proposal, wallet_id: felt252, vote_type: felt252) {
+        if self.state != ProposalState::in_votation {
+            return;
+        };
+        let voterElement = self.voters.get(wallet_id);
+        let voter =  match match_nullable(voterElement) {
+            FromNullableResult::Null => Option::None,
+            FromNullableResult::NotNull(val) => Option::Some(val.deref())
+        };
+        match voter {
+            Option::Some(voter) => {
+                if voter.has_voted {
+                    println!("Voter {:x} has already voted", wallet_id);
+                    return;
+                };
+                if voter.rol == PersonProposalRolState::none {
+                    println!("Voter {:x} has no rol", wallet_id);
+                    return;
+                };
+                if voter.rol == PersonProposalRolState::view {
+                    println!("Voter {:x} has view rol", wallet_id);
+                    return;
+                };
+                let mut idx = 0;
+                while idx < self.type_votes.len() {
+                    let mut temp = *self.type_votes[idx];
+                    if temp.vote_type == vote_type {
+                        let mut vote_types = ArrayTrait::<ProposalVoteTypeStruct>::new();
+                        let mut idx = 0;
+                        while idx < self.type_votes.len() {
+                            let temp = *self.type_votes[idx];
+                            if temp.vote_type != vote_type {
+                                vote_types.append(temp);
+                            };
+                            idx += 1;
+                        };
+                        vote_types.append(ProposalVoteTypeStruct {
+                            vote_type: vote_type,
+                            count: temp.count + 1
+                        });
+                        self.type_votes = vote_types;
+                    };
+                    idx += 1;
+                };
+                let new_voter = ProposalVoterStruct {
+                    has_voted: true,
+                    rol: voter.rol,
+                };
+                self.voters.insert(wallet_id, NullableTrait::new(new_voter));
+            },
+            Option::None => {
+                return;
+            }
+        };
+    }
+
+    fn finalize_votation(ref self: Proposal) {
+        if self.state != ProposalState::in_votation {
+            return;
+        };
+        self.state = ProposalState::finalized;
+    }
+}
+
+pub fn create_proposal(id: felt252, name: felt252) -> Proposal {
+    Proposal {
+        id: id,
+        name: name,
+        state: ProposalState::draft,
+        type_votes: Default::default(),
+        voters: Default::default()
     }
 }

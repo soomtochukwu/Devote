@@ -1,44 +1,41 @@
-use core::dict::Felt252Dict;
-use core::nullable::{NullableTrait, match_nullable, FromNullableResult};
+use core::fmt::{Display, Formatter, Error};
 
 #[derive(Drop, PartialEq, Serde, Copy)]
-enum PersonProposalRolState {
+pub enum PersonProposalRolState {
     none,
     view, 
     vote, 
     edit
 }
 
-#[derive(Drop, Copy)]
-struct PersonProposalStruct {
-    proposal_id: felt252,
-    rol: PersonProposalRolState,
+impl PersonProposalRolStateDisplay of Display<PersonProposalRolState> {
+    fn fmt(self: @PersonProposalRolState, ref f: Formatter) -> Result<(), Error> {
+        let result = match *self {
+            PersonProposalRolState::none => write!(f, "none"),
+            PersonProposalRolState::view => write!(f, "view"),
+            PersonProposalRolState::vote => write!(f, "vote"),
+            PersonProposalRolState::edit => write!(f, "edit"),
+        };
+        result
+    }
 }
 
-struct Person {
-    wallet_id: felt252,
-    id_number: felt252,
-    rol: felt252,
+#[derive(Drop, Copy)]
+pub struct PersonProposalStruct {
+    pub proposal_id: felt252,
+    pub rol: PersonProposalRolState,
+}
+
+#[derive(Drop)]
+pub struct Person {
+    pub wallet_id: felt252,
+    pub id_number: felt252,
+    pub rol: felt252,
     proposals: Array<PersonProposalStruct>
 }
 
-pub trait PersonTrait {
-    fn create_person(wallet_id: felt252, id_number: felt252) -> Person;
-    fn add_proposal(ref self: Person, proposal_id: felt252, rol: PersonProposalRolState);
-    fn get_all_proposals(ref self: Person) -> Array<PersonProposalStruct>;
-    fn remove_proposal(ref self: Person, proposal_id: felt252);
-}
-
-impl PersonImpl<+Drop<Person>, +Copy<Person>> of PersonTrait {
-    fn create_person(wallet_id: felt252, id_number: felt252) -> Person {
-        Person {
-            wallet_id: wallet_id,
-            id_number: id_number,
-            rol: 0,
-            proposals: ArrayTrait::<PersonProposalStruct>::new()
-        }
-    }
-
+#[generate_trait]
+pub impl PersonImpl of PersonTrait {    
     fn add_proposal(ref self: Person, proposal_id: felt252, rol: PersonProposalRolState) {
         let new_proposal = PersonProposalStruct {
             proposal_id: proposal_id,
@@ -70,4 +67,17 @@ impl PersonImpl<+Drop<Person>, +Copy<Person>> of PersonTrait {
         self.proposals = proposals;
     }
 
+    fn change_rol(ref self: Person, new_rol: felt252) {
+        self.rol = new_rol;
+    }
+
+}
+
+pub fn create_person(wallet_id: felt252, id_number: felt252) -> Person {
+    Person {
+        wallet_id: wallet_id,
+        id_number: id_number,
+        rol: 0,
+        proposals: ArrayTrait::<PersonProposalStruct>::new()
+    }
 }
