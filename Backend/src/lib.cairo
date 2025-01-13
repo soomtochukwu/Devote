@@ -1,10 +1,13 @@
-mod person;
-mod proposal;
+mod person_orig;
+mod proposal_orig;
+mod devote;
 
-use person::{create_person, PersonTrait, PersonProposalRolState};
-use proposal::{Proposal, create_proposal, ProposalTrait};
+use person_orig::{create_person, PersonTrait, PersonProposalRolState};
+use proposal_orig::{Proposal, create_proposal, ProposalTrait};
 
-fn main() {
+fn main() {}
+
+fn test() {
     println!("###############################");
     println!("######## Testing Person #######");
     println!("###############################");
