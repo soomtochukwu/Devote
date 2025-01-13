@@ -151,43 +151,34 @@ pub impl ProposalImpl of ProposalTrait {
         match voter {
             Option::Some(voter) => {
                 if voter.has_voted {
-                    println!("Voter {:x} has already voted", wallet_id);
                     return;
-                };
-                if voter.rol == PersonProposalRolState::none {
-                    println!("Voter {:x} has no rol", wallet_id);
+                } else if voter.rol == PersonProposalRolState::none {
                     return;
-                };
-                if voter.rol == PersonProposalRolState::view {
-                    println!("Voter {:x} has view rol", wallet_id);
+                } else if voter.rol == PersonProposalRolState::view {
                     return;
-                };
-                let mut idx = 0;
-                while idx < self.type_votes.len() {
-                    let mut temp = *self.type_votes[idx];
-                    if temp.vote_type == vote_type {
-                        let mut vote_types = ArrayTrait::<ProposalVoteTypeStruct>::new();
-                        let mut idx = 0;
-                        while idx < self.type_votes.len() {
-                            let temp = *self.type_votes[idx];
-                            if temp.vote_type != vote_type {
-                                vote_types.append(temp);
+                } else {
+                    let mut new_vote_type_list = ArrayTrait::<ProposalVoteTypeStruct>::new();
+                    let mut idx = 0;
+                    while idx < self.type_votes.len() {
+                        let mut temp = *self.type_votes[idx];
+                        if temp.vote_type == vote_type {
+                            let new_vote = ProposalVoteTypeStruct {
+                                vote_type: temp.vote_type,
+                                count: temp.count + 1
                             };
-                            idx += 1;
+                            new_vote_type_list.append(new_vote);
+                        } else {
+                            new_vote_type_list.append(temp);
                         };
-                        vote_types.append(ProposalVoteTypeStruct {
-                            vote_type: vote_type,
-                            count: temp.count + 1
-                        });
-                        self.type_votes = vote_types;
+                        idx += 1;
                     };
-                    idx += 1;
-                };
-                let new_voter = ProposalVoterStruct {
-                    has_voted: true,
-                    rol: voter.rol,
-                };
-                self.voters.insert(wallet_id, NullableTrait::new(new_voter));
+                    let new_voter = ProposalVoterStruct {
+                        has_voted: true,
+                        rol: voter.rol,
+                    };
+                    self.voters.insert(wallet_id, NullableTrait::new(new_voter));
+                    self.type_votes = new_vote_type_list;
+                }
             },
             Option::None => {
                 return;

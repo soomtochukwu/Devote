@@ -46,8 +46,8 @@ fn main() {
     proposal.add_vote_type('Me da igual');
     print_vote_types(ref proposal);
 
-    println!("**** Removing vote type 'No se presta' ****");
-    proposal.remove_vote_type('No se presta');
+    println!("**** Removing vote type 'Me da igual' ****");
+    proposal.remove_vote_type('Me da igual');
     print_vote_types(ref proposal);
 
     println!("**** Adding voter with wallet_id 0x1234 and rol 1 ****");
@@ -105,6 +105,7 @@ fn main() {
     proposal.add_voter('0x9876', PersonProposalRolState::vote);
     proposal.add_voter('0x5438', PersonProposalRolState::vote);
     proposal.add_voter('0x9877', PersonProposalRolState::vote);
+    proposal.add_voter('0x9878', PersonProposalRolState::vote);
 
     println!("###############################");
     println!("########## Start Vote #########");
@@ -124,9 +125,14 @@ fn main() {
     println!("###################################");
     println!("########## Start Votation #########");
     println!("###################################");
+    println!("");
 
     println!("Testing votation with voter 0x1234, role none and vote_type 'Si se presta'");
     proposal.vote('0x1234', 'Si se presta');
+    print_vote_types(ref proposal);
+
+    println!("Testing votation with voter 0x5678, role edit and vote_type 'Si se presta'");
+    proposal.vote('0x5678', 'Si se presta');
     print_vote_types(ref proposal);
 
     println!("Testing votation with voter 0x5678, role edit and vote_type 'Si se presta'");
@@ -153,6 +159,20 @@ fn main() {
     proposal.vote('0x9877', 'Me da igual');
     print_vote_types(ref proposal);
 
+    println!("######################################");
+    println!("########## Finalize Votation #########");
+    println!("######################################");
+    println!("");
+
+    proposal.finalize_votation();
+
+    println!("Testing adding vote_type after finalizing votation");
+    proposal.add_vote_type('No se que votar');
+    print_vote_types(ref proposal);
+
+    println!("Testing votation with voter 0x9878, role vote and vote_type 'Si se presta'");
+    proposal.vote('0x9878', 'Si se presta');
+    print_vote_types(ref proposal);
 }
 
 fn print_vote_types(ref proposal: Proposal) {
@@ -161,7 +181,7 @@ fn print_vote_types(ref proposal: Proposal) {
     let mut idx = 0;
     while idx < vote_types.len() {
         let vote_type = *vote_types[idx];
-        println!("Vote type: {} - votes: {}", format!("{}",vote_type.vote_type), vote_type.count);
+        println!("Vote type: {} - votes: {}", vote_type.vote_type, vote_type.count);
         idx += 1;
     };
     println!("");
