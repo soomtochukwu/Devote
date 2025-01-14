@@ -1,6 +1,8 @@
 mod person_orig;
 mod proposal_orig;
 mod devote;
+mod person;
+mod proposal;
 
 use person_orig::{create_person, PersonTrait, PersonProposalRolState};
 use proposal_orig::{Proposal, create_proposal, ProposalTrait};
