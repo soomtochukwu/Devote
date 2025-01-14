@@ -1,17 +1,10 @@
 use core::starknet::{ ContractAddress };
 use starknet::storage::{ Vec,  Map };
 
-#[derive(Drop, Copy, starknet::Store)]
+#[derive(Drop, Copy, Serde, starknet::Store)]
 pub struct PersonProposalStruct {
     pub proposal_id: felt252,
-    pub rol: u8, //0 no tiene permisos, 1 solo puede ver, 2 puede votar, 3 puede editar
-}
-
-#[derive(Copy, Drop, Serde, starknet::Store)]
-pub struct BasicPerson{
-    pub wallet_id: ContractAddress,
-    pub id_number: felt252,
-    pub rol: felt252,
+    pub role: u8, //0 no tiene permisos, 1 solo puede ver, 2 puede votar, 3 puede editar
 }
 
 #[derive(Drop)]
@@ -19,14 +12,21 @@ pub struct BasicPerson{
 pub struct Person {
     pub wallet_id: ContractAddress,
     pub id_number: felt252,
-    pub rol: felt252,
+    pub role: felt252,
     pub proposals: Vec<PersonProposalStruct>
+}
+
+#[derive(Drop, Serde)]
+pub struct PersonPublic {
+    pub wallet_id: ContractAddress,
+    pub id_number: felt252,
+    pub role: felt252
 }
 
 #[derive(Drop, PartialEq, Clone, Serde, Destruct, Copy, starknet::Store)]
 pub struct ProposalVoterStruct {
     pub has_voted: bool,
-    pub rol: u8 //0 no tiene permisos, 1 solo puede ver, 2 puede votar, 3 puede editar
+    pub role: u8 //0 no tiene permisos, 1 solo puede ver, 2 puede votar, 3 puede editar
 }
 
 #[derive(Copy, Drop, Serde, starknet::Store)]
@@ -41,17 +41,33 @@ pub struct Proposal {
     pub id: felt252,
     pub name: felt252,
     pub state: u8, //0 draft, 1 in_votation, 2 finalized
+    pub total_voters: u256,
+    pub has_voted: u256,
     pub type_votes: Vec<ProposalVoteTypeStruct>,
     pub voters: Map<ContractAddress, ProposalVoterStruct>
+}
+
+#[derive(Drop, Serde)]
+pub struct ProposalPublic {
+    id: felt252,
+    pub name: felt252,
+    pub state: u8, //0 draft, 1 in_votation, 2 finalized
+    pub total_voters: u256,
+    pub has_voted: u256,
+    pub type_votes: Array<ProposalVoteTypeStruct>,
+    pub voter: ProposalVoterStruct
 }
 
 #[starknet::interface]
 trait IDeVote<ContractState> {    
     fn create_new_person(ref self: ContractState, id_number: felt252);
     fn change_person_rol(ref self: ContractState, wallet_id: ContractAddress, new_rol: felt252);
+    fn get_person(ref self: ContractState) -> PersonPublic;
+    fn get_person_proposals(ref self: ContractState) -> Array<PersonProposalStruct>;
     fn create_proposal(ref self: ContractState, proposal_id: felt252, name: felt252);
+    fn get_proposal(ref self: ContractState, proposal_id: felt252) -> ProposalPublic;
     fn add_voter(ref self: ContractState, proposal_id: felt252, voter_id: ContractAddress);
-    fn modify_voters(ref self: ContractState, proposal_id: felt252, wallet_id: ContractAddress, rol: u8);
+    fn modify_voters(ref self: ContractState, proposal_id: felt252, wallet_id: ContractAddress, role: u8);
     fn remove_voters(ref self: ContractState, proposal_id: felt252, wallet_id: ContractAddress);
     fn add_vote_type(ref self: ContractState, proposal_id: felt252, vote_type: felt252);
     fn remove_vote_type(ref self: ContractState, proposal_id: felt252, vote_type: felt252);
@@ -66,11 +82,12 @@ trait IDeVote<ContractState> {
 mod DeVote {
     use super::IDeVote;
     use super::PersonProposalStruct;
+    use super::PersonPublic;
     use super::Person;
-    use super::BasicPerson;
     use super::ProposalVoterStruct;
     use super::ProposalVoteTypeStruct;
     use super::Proposal;
+    use super::ProposalPublic;
     use starknet::storage::{
         StoragePointerReadAccess, StoragePointerWriteAccess, MutableVecTrait, Map, StoragePathEntry,
     };
@@ -89,26 +106,77 @@ mod DeVote {
             let mut person = self.persons.entry(wallet_id);
             person.id_number.write(id_number);
             person.wallet_id.write(wallet_id);
-            person.rol.write(0);
+            person.role.write(0);
         }
 
         fn change_person_rol(ref self: ContractState, wallet_id: ContractAddress, new_rol: felt252) {
             let mut person = self.persons.entry(wallet_id);
-            person.rol.write(new_rol);
+            person.role.write(new_rol);
+        }
+
+        fn get_person(ref self: ContractState) -> PersonPublic {
+            let wallet_id = get_caller_address();
+            let person = self.persons.entry(wallet_id);
+            return PersonPublic {
+                wallet_id: wallet_id,
+                id_number: person.id_number.read(),
+                role: person.role.read(),
+            };
+        }
+
+        fn get_person_proposals(ref self: ContractState) -> Array<PersonProposalStruct> {
+            let wallet_id = get_caller_address();
+            let person = self.persons.entry(wallet_id);
+            let mut proposals = ArrayTrait::<PersonProposalStruct>::new();
+            let mut idx = 0;
+            while idx < person.proposals.len() {
+                proposals.append(person.proposals.at(idx).read());
+                idx += 1;
+            };
+            return proposals;
         }
 
         fn create_proposal(ref self: ContractState, proposal_id: felt252, name: felt252) {
+            let wallet_id = get_caller_address();
+            let person = self.persons.entry(wallet_id);
+            if person.role.read() == 0 {
+                return;
+            }
             let mut proposal = self.proposals.entry(proposal_id);
             proposal.id.write(proposal_id);
             proposal.name.write(name);
             proposal.state.write(0);
+            proposal.total_voters.write(1);
+            proposal.has_voted.write(0);
 
             let mut proposal_creator = self.persons.entry(get_caller_address());
             let temp = PersonProposalStruct {
                 proposal_id: proposal_id,
-                rol: 3,
+                role: 3,
             };
             proposal_creator.proposals.append().write(temp);
+        }
+
+        fn get_proposal(ref self: ContractState, proposal_id: felt252) -> ProposalPublic {
+            let proposal = self.proposals.entry(proposal_id);
+            let mut votation = ArrayTrait::<ProposalVoteTypeStruct>::new();
+            let mut idx = 0;
+            while idx < proposal.type_votes.len() {
+                let vote = proposal.type_votes.at(idx).read();
+                if vote.is_active {
+                    votation.append(vote);
+                }
+                idx += 1;
+            };
+            return ProposalPublic {
+                id: proposal.id.read(),
+                name: proposal.name.read(),
+                state: proposal.state.read(),
+                total_voters: proposal.total_voters.read(),
+                has_voted: proposal.has_voted.read(),
+                type_votes: votation,
+                voter: proposal.voters.entry(get_caller_address()).read(),
+            };
         }
 
         fn add_voter(ref self: ContractState, proposal_id: felt252, voter_id: ContractAddress) {
@@ -116,17 +184,21 @@ mod DeVote {
                 let mut proposal = self.proposals.entry(proposal_id);
                 let temp = ProposalVoterStruct {
                     has_voted: false,
-                    rol: 1,
+                    role: 1,
                 };
                 proposal.voters.entry(voter_id).write(temp);
+                proposal.total_voters.write(proposal.total_voters.read() + 1);
             }
         }
 
-        fn modify_voters(ref self: ContractState, proposal_id: felt252, wallet_id: ContractAddress, rol: u8) {
+        fn modify_voters(ref self: ContractState, proposal_id: felt252, wallet_id: ContractAddress, role: u8) {
+            if(role == 0){
+                return;
+            }
             if can_modify_proposal(@self, proposal_id, 0) {
                 let mut proposal = self.proposals.entry(proposal_id);
                 let mut voter = proposal.voters.entry(wallet_id);
-                voter.rol.write(rol);
+                voter.role.write(role);
             }
         }
 
@@ -134,7 +206,8 @@ mod DeVote {
             if can_modify_proposal(@self, proposal_id, 0) {
                 let mut proposal = self.proposals.entry(proposal_id);
                 let mut voter = proposal.voters.entry(wallet_id);
-                voter.rol.write(0);
+                voter.role.write(0);
+                proposal.total_voters.write(proposal.total_voters.read() - 1);
             }
         }
 
@@ -193,14 +266,15 @@ mod DeVote {
                 return;
             }
             let voter = proposal.voters.entry(wallet_id);
-            if voter.rol.read() == 0 {
+            if voter.role.read() == 0 {
                 return;
-            } else if voter.rol.read() == 1 {
+            } else if voter.role.read() == 1 {
                 return;
             } else if voter.has_voted.read() {
                 return;
             } else {
                 let mut idx = 0;
+                proposal.has_voted.write(proposal.has_voted.read() + 1);
                 while idx < proposal.type_votes.len() {
                     let vote = proposal.type_votes.at(idx).read();
                     if vote.vote_type == vote_type {
@@ -243,7 +317,7 @@ mod DeVote {
             return false;
         } else {
             let voter = proposal.voters.entry(wallet_id);
-            if voter.rol.read() == 3 {
+            if voter.role.read() == 3 {
                 return true;
             }
         }
