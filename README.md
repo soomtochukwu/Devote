@@ -27,6 +27,7 @@ DeVote addresses these challenges with an innovative, blockchain-powered platfor
 - *Accessibility:* Users can vote from anywhere with internet access, removing geographical and mobility barriers. 🌐
 - *Privacy and Security:* The project uses hashed IDs to protect voters' identities. This interim measure ensures a secure voting process, with plans to incorporate ZK technology to elevate privacy standards further. 🔒
 - *Community Engagement:* We plan to implement an NFT incentive program in the future to reward participants after voting a certain number of times. This feature aims to foster ongoing participation and engagement, contingent on the growth of the project through grants or rewards. 🏆 🏆
+- *Guidance:* Our goal is to ensure users have the best possible voting experience. That’s why we developed an AI Agent to assist voters, guiding them through the process and addressing any questions they may have along the way. 🤖
 
 ## Ways to Implement the Project (Use Cases)
 
