@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { useEffect, useState } from "react";
 import { useContractCustom } from "@/hooks/use-contract";
 import { ProposalPublic } from "@/interfaces/Proposal";
+import { useAccount } from "@starknet-react/core";
 
 const participationStats = {
   totalVoters: 50000,
@@ -17,14 +18,18 @@ const participationStats = {
 export default function PastResultsPage() {
   const { getMyProposals } = useContractCustom();
   const [pastVotings, setPastVoting] = useState<ProposalPublic[]>([]);
+  const { address, isConnected } = useAccount();
 
   useEffect(() => {
     const fetchData = async () => {
-      const proposals = await getMyProposals(2);
-      setPastVoting(proposals);
+      if (!!address && isConnected) {
+        const proposals = await getMyProposals(2, address);
+        setPastVoting(proposals);
+      }
     };
     fetchData();
-  }, []);
+  }, [address, isConnected]);
+
   return (
     <div className="min-h-screen flex flex-col bg-black text-gray-100">
       <Header />

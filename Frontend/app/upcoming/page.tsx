@@ -6,18 +6,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useContractCustom } from "@/hooks/use-contract";
 import { useEffect, useState } from "react";
 import { ProposalPublic } from "@/interfaces/Proposal";
+import { useAccount } from "@starknet-react/core";
 
 export default function UpcomingVotingsPage() {
   const { getMyProposals } = useContractCustom();
   const [upcomingVotings, setUpcomingVotings] = useState<ProposalPublic[]>([]);
+  const { address, isConnected } = useAccount();
 
   useEffect(() => {
     const fetchData = async () => {
-      const proposals = await getMyProposals(0);
-      setUpcomingVotings(proposals);
+      if (!!address && isConnected) {
+        const proposals = await getMyProposals(0, address);
+        setUpcomingVotings(proposals);
+      }
     };
     fetchData();
-  }, []);
+  }, [address, isConnected]);
 
   return (
     <div className="min-h-screen flex flex-col bg-black text-gray-100">

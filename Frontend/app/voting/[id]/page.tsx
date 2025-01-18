@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { useContractCustom } from "@/hooks/use-contract";
 import { ProposalPublic, ProposalVoteTypeStruct } from "@/interfaces/Proposal";
 import { useParams } from "next/navigation";
+import { useAccount } from "@starknet-react/core";
 
 /*const votingOptions = [
   { id: 1, name: "Option A", description: "First proposed solution" },
@@ -31,15 +32,20 @@ export default function VotingStationPage() {
     []
   );
   const params = useParams<{ id: string }>();
+  const { address, isConnected } = useAccount();
 
   useEffect(() => {
     const fetchData = async () => {
-      const proposal = await getProposal(params.id);
-      setVotingOptions(proposal.type_votes);
-      setProposal(proposal);
+      console.log("Proposal", isConnected, address);
+      if (!!address && isConnected) {
+        const proposal = await getProposal(params.id, address);
+        setVotingOptions(proposal.type_votes);
+        console.log("Proposal", proposal);
+        setProposal(proposal);
+      }
     };
     fetchData();
-  }, [params.id]);
+  }, [params.id, address, isConnected]);
 
   const handleVote = async () => {
     if (selectedOption) {

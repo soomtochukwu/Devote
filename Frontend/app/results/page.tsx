@@ -9,20 +9,24 @@ import Link from "next/link";
 import { useContractCustom } from "@/hooks/use-contract";
 import { useEffect, useState } from "react";
 import { ProposalPublic } from "@/interfaces/Proposal";
+import { useAccount } from "@starknet-react/core";
 
 export default function ResultsPage() {
   const { getMyProposals } = useContractCustom();
   const [activeVotingResults, setActiveVotingResults] = useState<
     ProposalPublic[]
   >([]);
+  const { address, isConnected } = useAccount();
 
   useEffect(() => {
     const fetchData = async () => {
-      const proposals = await getMyProposals(1);
-      setActiveVotingResults(proposals);
+      if (!!address && isConnected) {
+        const proposals = await getMyProposals(1, address);
+        setActiveVotingResults(proposals);
+      }
     };
     fetchData();
-  }, []);
+  }, [address, isConnected]);
 
   return (
     <div className="min-h-screen flex flex-col bg-black text-gray-100">

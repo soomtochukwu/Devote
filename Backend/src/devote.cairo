@@ -69,7 +69,7 @@ trait IDeVote<ContractState> {
     fn get_proposal(
         self: @ContractState, proposal_id: felt252, connected_walled_id: ContractAddress,
     ) -> ProposalPublic;
-    fn add_voter(ref self: ContractState, proposal_id: felt252, voter_id: felt252);
+    fn add_voter(ref self: ContractState, proposal_id: felt252, voter_wallet: ContractAddress);
     fn modify_voters(ref self: ContractState, proposal_id: felt252, voter_id: felt252, role: u8);
     fn remove_voters(ref self: ContractState, proposal_id: felt252, voter_id: felt252);
     fn add_vote_type(ref self: ContractState, proposal_id: felt252, vote_type: felt252);
@@ -286,12 +286,19 @@ mod DeVote {
                 voter: proposal.voters.entry(person.id_number.read()).read(),
             };
         }
-        fn add_voter(ref self: ContractState, proposal_id: felt252, voter_id: felt252) {
+        fn add_voter(ref self: ContractState, proposal_id: felt252, voter_wallet: ContractAddress) {
             if can_modify_proposal(@self, proposal_id, 0) {
                 let mut proposal = self.proposals.entry(proposal_id);
-                let temp = ProposalVoterStruct { has_voted: false, role: 1 };
+                let mut person = self.persons.entry(voter_wallet);
+                let temp = ProposalVoterStruct { has_voted: false, role: 3 };
+                let voter_id = person.id_number.read();
                 proposal.voters.entry(voter_id).write(temp);
                 proposal.total_voters.write(proposal.total_voters.read() + 1);
+                person
+                    .proposals
+                    .append()
+                    .write(PersonProposalStruct { proposal_id: proposal_id, role: 3 });
+
                 self
                     .emit(
                         AddVoter {

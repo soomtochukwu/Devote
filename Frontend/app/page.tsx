@@ -27,12 +27,6 @@ export default function LoginPage() {
     router.push("/dashboard");
   };
 
-  useEffect(() => {
-    if (isConnected) {
-      router.push("/dashboard");
-    }
-  }, [isConnected]);
-
   return (
     <div className="min-h-screen flex flex-col bg-black text-gray-100">
       <main className="flex-grow flex flex-col items-center justify-center px-4 py-8">

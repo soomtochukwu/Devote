@@ -1,24 +1,19 @@
 import { PersonProposalStruct, PersonPublic } from "@/interfaces/Person";
 import { ProposalPublic, ProposalVoteTypeStruct } from "@/interfaces/Proposal";
-import {
-  Abi,
-  StarknetTypedContract,
-  useAccount,
-  useContract,
-} from "@starknet-react/core";
+import { Abi, useAccount, useContract } from "@starknet-react/core";
 import { shortString } from "starknet";
 const contractAddress =
-  "0x01424945ceb915f35dd1bb94c83222bdcc4405ef1aedbfc0d79b41091be1f9c0";
+  "0x048ff663cf2a45045d0898a2a56fd5a9c9c8e051e62e0c55821512cb30a26260";
 
 const abi: Abi = [
   {
     type: "impl",
-    name: "TestImpl",
-    interface_name: "DeVote::ITest",
+    name: "DeVoteImpl",
+    interface_name: "DeVote::DeVote::IDeVote",
   },
   {
     type: "struct",
-    name: "DeVote::PersonProposalStruct",
+    name: "DeVote::DeVote::PersonProposalStruct",
     members: [
       {
         name: "proposal_id",
@@ -32,7 +27,7 @@ const abi: Abi = [
   },
   {
     type: "struct",
-    name: "DeVote::PersonPublic",
+    name: "DeVote::DeVote::PersonPublic",
     members: [
       {
         name: "wallet_id",
@@ -48,7 +43,7 @@ const abi: Abi = [
       },
       {
         name: "proposals",
-        type: "core::array::Array::<DeVote::PersonProposalStruct>",
+        type: "core::array::Array::<DeVote::DeVote::PersonProposalStruct>",
       },
     ],
   },
@@ -82,7 +77,7 @@ const abi: Abi = [
   },
   {
     type: "struct",
-    name: "DeVote::ProposalVoteTypeStruct",
+    name: "DeVote::DeVote::ProposalVoteTypeStruct",
     members: [
       {
         name: "vote_type",
@@ -100,7 +95,7 @@ const abi: Abi = [
   },
   {
     type: "struct",
-    name: "DeVote::ProposalVoterStruct",
+    name: "DeVote::DeVote::ProposalVoterStruct",
     members: [
       {
         name: "has_voted",
@@ -114,7 +109,7 @@ const abi: Abi = [
   },
   {
     type: "struct",
-    name: "DeVote::ProposalPublic",
+    name: "DeVote::DeVote::ProposalPublic",
     members: [
       {
         name: "id",
@@ -138,17 +133,17 @@ const abi: Abi = [
       },
       {
         name: "type_votes",
-        type: "core::array::Array::<DeVote::ProposalVoteTypeStruct>",
+        type: "core::array::Array::<DeVote::DeVote::ProposalVoteTypeStruct>",
       },
       {
         name: "voter",
-        type: "DeVote::ProposalVoterStruct",
+        type: "DeVote::DeVote::ProposalVoterStruct",
       },
     ],
   },
   {
     type: "struct",
-    name: "DeVote::PersonIdStruct",
+    name: "DeVote::DeVote::PersonIdStruct",
     members: [
       {
         name: "wallet_id",
@@ -162,7 +157,7 @@ const abi: Abi = [
   },
   {
     type: "interface",
-    name: "DeVote::ITest",
+    name: "DeVote::DeVote::IDeVote",
     items: [
       {
         type: "function",
@@ -191,10 +186,15 @@ const abi: Abi = [
       {
         type: "function",
         name: "get_person",
-        inputs: [],
+        inputs: [
+          {
+            name: "connected_walled_id",
+            type: "core::starknet::contract_address::ContractAddress",
+          },
+        ],
         outputs: [
           {
-            type: "DeVote::PersonPublic",
+            type: "DeVote::DeVote::PersonPublic",
           },
         ],
         state_mutability: "view",
@@ -202,7 +202,12 @@ const abi: Abi = [
       {
         type: "function",
         name: "get_person_rol",
-        inputs: [],
+        inputs: [
+          {
+            name: "connected_walled_id",
+            type: "core::starknet::contract_address::ContractAddress",
+          },
+        ],
         outputs: [
           {
             type: "core::felt252",
@@ -213,10 +218,15 @@ const abi: Abi = [
       {
         type: "function",
         name: "get_person_proposals",
-        inputs: [],
+        inputs: [
+          {
+            name: "connected_walled_id",
+            type: "core::starknet::contract_address::ContractAddress",
+          },
+        ],
         outputs: [
           {
-            type: "core::array::Array::<DeVote::PersonProposalStruct>",
+            type: "core::array::Array::<DeVote::DeVote::PersonProposalStruct>",
           },
         ],
         state_mutability: "view",
@@ -245,10 +255,14 @@ const abi: Abi = [
             name: "proposal_id",
             type: "core::felt252",
           },
+          {
+            name: "connected_walled_id",
+            type: "core::starknet::contract_address::ContractAddress",
+          },
         ],
         outputs: [
           {
-            type: "DeVote::ProposalPublic",
+            type: "DeVote::DeVote::ProposalPublic",
           },
         ],
         state_mutability: "view",
@@ -262,8 +276,8 @@ const abi: Abi = [
             type: "core::felt252",
           },
           {
-            name: "voter_id",
-            type: "core::felt252",
+            name: "voter_wallet",
+            type: "core::starknet::contract_address::ContractAddress",
           },
         ],
         outputs: [],
@@ -345,10 +359,14 @@ const abi: Abi = [
             name: "proposal_id",
             type: "core::felt252",
           },
+          {
+            name: "connected_walled_id",
+            type: "core::starknet::contract_address::ContractAddress",
+          },
         ],
         outputs: [
           {
-            type: "core::array::Array::<DeVote::ProposalVoteTypeStruct>",
+            type: "core::array::Array::<DeVote::DeVote::ProposalVoteTypeStruct>",
           },
         ],
         state_mutability: "view",
@@ -401,10 +419,14 @@ const abi: Abi = [
             name: "proposal_id",
             type: "core::felt252",
           },
+          {
+            name: "connected_walled_id",
+            type: "core::starknet::contract_address::ContractAddress",
+          },
         ],
         outputs: [
           {
-            type: "core::array::Array::<DeVote::ProposalVoteTypeStruct>",
+            type: "core::array::Array::<DeVote::DeVote::ProposalVoteTypeStruct>",
           },
         ],
         state_mutability: "view",
@@ -412,10 +434,15 @@ const abi: Abi = [
       {
         type: "function",
         name: "view_person_list",
-        inputs: [],
+        inputs: [
+          {
+            name: "connected_walled_id",
+            type: "core::starknet::contract_address::ContractAddress",
+          },
+        ],
         outputs: [
           {
-            type: "core::array::Array::<DeVote::PersonIdStruct>",
+            type: "core::array::Array::<DeVote::DeVote::PersonIdStruct>",
           },
         ],
         state_mutability: "view",
@@ -423,10 +450,15 @@ const abi: Abi = [
       {
         type: "function",
         name: "get_all_person_ids",
-        inputs: [],
+        inputs: [
+          {
+            name: "connected_walled_id",
+            type: "core::starknet::contract_address::ContractAddress",
+          },
+        ],
         outputs: [
           {
-            type: "core::array::Array::<DeVote::PersonIdStruct>",
+            type: "core::array::Array::<DeVote::DeVote::PersonIdStruct>",
           },
         ],
         state_mutability: "view",
@@ -438,6 +470,153 @@ const abi: Abi = [
     name: "constructor",
     inputs: [],
   },
+  {
+    type: "event",
+    name: "DeVote::DeVote::DeVote::PersonAdded",
+    kind: "struct",
+    members: [
+      {
+        name: "wallet_id",
+        type: "core::starknet::contract_address::ContractAddress",
+        kind: "data",
+      },
+      {
+        name: "id_number",
+        type: "core::felt252",
+        kind: "key",
+      },
+      {
+        name: "role",
+        type: "core::felt252",
+        kind: "data",
+      },
+    ],
+  },
+  {
+    type: "event",
+    name: "DeVote::DeVote::DeVote::PersonUpdated",
+    kind: "struct",
+    members: [
+      {
+        name: "wallet_id_signer",
+        type: "core::starknet::contract_address::ContractAddress",
+        kind: "key",
+      },
+      {
+        name: "wallet_id",
+        type: "core::starknet::contract_address::ContractAddress",
+        kind: "data",
+      },
+      {
+        name: "role",
+        type: "core::felt252",
+        kind: "data",
+      },
+    ],
+  },
+  {
+    type: "event",
+    name: "DeVote::DeVote::DeVote::AddVoter",
+    kind: "struct",
+    members: [
+      {
+        name: "wallet_id_signer",
+        type: "core::starknet::contract_address::ContractAddress",
+        kind: "key",
+      },
+      {
+        name: "proposal_id",
+        type: "core::felt252",
+        kind: "data",
+      },
+      {
+        name: "voter_id",
+        type: "core::felt252",
+        kind: "data",
+      },
+    ],
+  },
+  {
+    type: "event",
+    name: "DeVote::DeVote::DeVote::UnauthorizeEvent",
+    kind: "struct",
+    members: [
+      {
+        name: "function_name",
+        type: "core::felt252",
+        kind: "data",
+      },
+      {
+        name: "type_error",
+        type: "core::felt252",
+        kind: "data",
+      },
+      {
+        name: "wallet_id",
+        type: "core::starknet::contract_address::ContractAddress",
+        kind: "data",
+      },
+    ],
+  },
+  {
+    type: "event",
+    name: "DeVote::DeVote::DeVote::GeneralEvent",
+    kind: "struct",
+    members: [
+      {
+        name: "function_name",
+        type: "core::felt252",
+        kind: "data",
+      },
+      {
+        name: "type_message",
+        type: "core::felt252",
+        kind: "data",
+      },
+      {
+        name: "wallet_id",
+        type: "core::starknet::contract_address::ContractAddress",
+        kind: "data",
+      },
+      {
+        name: "data",
+        type: "core::felt252",
+        kind: "data",
+      },
+    ],
+  },
+  {
+    type: "event",
+    name: "DeVote::DeVote::DeVote::Event",
+    kind: "enum",
+    variants: [
+      {
+        name: "PersonAdded",
+        type: "DeVote::DeVote::DeVote::PersonAdded",
+        kind: "nested",
+      },
+      {
+        name: "PersonUpdated",
+        type: "DeVote::DeVote::DeVote::PersonUpdated",
+        kind: "nested",
+      },
+      {
+        name: "AddVoter",
+        type: "DeVote::DeVote::DeVote::AddVoter",
+        kind: "nested",
+      },
+      {
+        name: "UnauthorizeEvent",
+        type: "DeVote::DeVote::DeVote::UnauthorizeEvent",
+        kind: "nested",
+      },
+      {
+        name: "GeneralEvent",
+        type: "DeVote::DeVote::DeVote::GeneralEvent",
+        kind: "nested",
+      },
+    ],
+  },
 ];
 
 export function useContractCustom() {
@@ -447,45 +626,58 @@ export function useContractCustom() {
   });
   const { account } = useAccount();
 
-  const getPersonProposals = async (): Promise<PersonProposalStruct[]> => {
-    const result: PersonProposalStruct[] =
-      await contract?.get_person_proposals();
-    console.log(result);
-    return result;
-  };
-
   const getMyProposals = async (
-    status: number = 0
+    status: number = 0,
+    wallet_address: string
   ): Promise<ProposalPublic[]> => {
-    const proposalIds: PersonProposalStruct[] = await getPersonProposals();
+    const proposalIds: PersonProposalStruct[] =
+      await contract?.get_person_proposals(wallet_address);
     const proposals: ProposalPublic[] = [];
-    for (const proposalId of proposalIds) {
-      const proposal = await getProposal(proposalId.proposal_id);
+    for (const proposalItem of proposalIds) {
+      const proposal: ProposalPublic = await contract?.get_proposal(
+        proposalItem.proposal_id,
+        wallet_address
+      );
+      proposal.name = shortString.decodeShortString(proposal.name);
+      proposal.state = Number(proposal.state);
+      proposal.total_voters = Number(proposal.total_voters);
+      proposal.has_voted = Number(proposal.has_voted);
+      proposal.type_votes = proposal.type_votes
+        .map((type) => {
+          type.vote_type = shortString.decodeShortString(type.vote_type);
+          type.count = Number(type.count);
+          return type;
+        })
+        .filter((type) => type.is_active);
       proposals.push(proposal);
     }
     return proposals.filter((p) => p.state === status);
   };
 
-  const getPerson = async (): Promise<PersonPublic> => {
-    const result: PersonPublic = await contract?.get_person();
-    console.log(result);
-    return result;
-  };
-
-  const getProposal = async (proposal_id: string): Promise<ProposalPublic> => {
-    const result: ProposalPublic = await contract?.get_proposal(proposal_id);
-    result.name = shortString.decodeShortString(result.name);
-    result.state = Number(result.state);
-    result.total_voters = Number(result.total_voters);
-    result.has_voted = Number(result.has_voted);
-    result.type_votes = result.type_votes
+  const getProposal = async (
+    proposal_id: string,
+    wallet_address: string
+  ): Promise<ProposalPublic> => {
+    const proposal: ProposalPublic = await contract?.get_proposal(
+      proposal_id,
+      wallet_address
+    );
+    proposal.name = shortString.decodeShortString(proposal.name);
+    proposal.state = Number(proposal.state);
+    proposal.total_voters = Number(proposal.total_voters);
+    proposal.has_voted = Number(proposal.has_voted);
+    proposal.type_votes = proposal.type_votes
       .map((type) => {
         type.vote_type = shortString.decodeShortString(type.vote_type);
         type.count = Number(type.count);
         return type;
       })
       .filter((type) => type.is_active);
-    console.log(result);
+    return proposal;
+  };
+
+  const getPerson = async (wallet_address: string): Promise<PersonPublic> => {
+    const result: PersonPublic = await contract?.get_person(wallet_address);
     return result;
   };
 
@@ -495,27 +687,26 @@ export function useContractCustom() {
     }
     contract?.connect(account);
     const result = await contract?.vote(proposal_id, vote_type);
-    console.log(result);
     return result;
   };
 
   const viewVotation = async (
-    proposal_id: string
+    proposal_id: string,
+    wallet_address: string
   ): Promise<ProposalVoteTypeStruct[]> => {
     const result: ProposalVoteTypeStruct[] = await contract?.view_votation(
-      proposal_id
+      proposal_id,
+      wallet_address
     );
-    console.log(result);
     return result;
   };
 
   return {
     contract,
-    getPersonProposals,
     getPerson,
-    getProposal,
     vote,
     viewVotation,
     getMyProposals,
+    getProposal,
   };
 }

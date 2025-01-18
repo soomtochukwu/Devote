@@ -9,18 +9,22 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useContractCustom } from "@/hooks/use-contract";
 import { ProposalPublic } from "@/interfaces/Proposal";
+import { useAccount } from "@starknet-react/core";
 
 export default function DashboardPage() {
   const [activeVotings, setActiveVotings] = useState<ProposalPublic[]>([]);
   const { getMyProposals } = useContractCustom();
+  const { address, isConnected } = useAccount();
 
   useEffect(() => {
     const fetchData = async () => {
-      const proposals = await getMyProposals(1);
-      setActiveVotings(proposals);
+      if (!!address && isConnected) {
+        const proposals = await getMyProposals(1, address);
+        setActiveVotings(proposals);
+      }
     };
     fetchData();
-  }, []);
+  }, [address, isConnected]);
 
   return (
     <div className="min-h-screen flex flex-col bg-black text-gray-100">
