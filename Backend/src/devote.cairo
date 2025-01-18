@@ -89,9 +89,6 @@ trait IDeVote<ContractState> {
     fn get_all_person_ids(
         self: @ContractState, connected_walled_id: ContractAddress,
     ) -> Array<PersonIdStruct>;
-    fn get_person_id_by_wallet(
-        self: @ContractState, connected_walled_id: ContractAddress,
-    ) -> felt252;
 }
 #[starknet::contract]
 mod DeVote {
@@ -112,7 +109,7 @@ mod DeVote {
     #[storage]
     struct Storage {
         persons_ids: Vec<PersonIdStruct>,
-        persons: Map<felt252, Person>,
+        persons: Map<ContractAddress, Person>,
         proposals: Map<felt252, Proposal>,
     }
     #[event]
@@ -166,9 +163,8 @@ mod DeVote {
     #[abi(embed_v0)]
     impl DeVoteImpl of IDeVote<ContractState> {
         fn create_new_person(ref self: ContractState, person_id: felt252) {
-            let id_number = get_id_by_wallet(@self);
             let wallet_id = get_caller_address();
-            let mut person = self.persons.entry(id_number);
+            let mut person = self.persons.entry(wallet_id);
             person.id_number.write(person_id);
             person.wallet_id.write(wallet_id);
             person.role.write(0);
@@ -181,9 +177,9 @@ mod DeVote {
                     },
                 );
         }
+
         fn change_person_rol(ref self: ContractState, new_rol: felt252) {
-            let id_number = get_id_by_wallet(@self);
-            let person = self.persons.entry(id_number);
+            let person = self.persons.entry(get_caller_address());
             person.role.write(new_rol);
             self
                 .emit(
@@ -194,9 +190,9 @@ mod DeVote {
                     },
                 );
         }
+
         fn get_person(self: @ContractState, connected_walled_id: ContractAddress) -> PersonPublic {
-            let id_number = get_id_by_wallet_id(self, connected_walled_id);
-            let person = self.persons.entry(id_number);
+            let person = self.persons.entry(connected_walled_id);
 
             let mut proposals = ArrayTrait::<PersonProposalStruct>::new();
             let mut idx = 0;
@@ -213,15 +209,13 @@ mod DeVote {
         }
 
         fn get_person_rol(self: @ContractState, connected_walled_id: ContractAddress) -> felt252 {
-            let id_number = get_id_by_wallet_id(self, connected_walled_id);
-            let person = self.persons.entry(id_number);
+            let person = self.persons.entry(connected_walled_id);
             return person.role.read();
         }
         fn get_person_proposals(
             self: @ContractState, connected_walled_id: ContractAddress,
         ) -> Array<PersonProposalStruct> {
-            let id_number = get_id_by_wallet_id(self, connected_walled_id);
-            let person = self.persons.entry(id_number);
+            let person = self.persons.entry(connected_walled_id);
             let mut proposals = ArrayTrait::<PersonProposalStruct>::new();
             let mut idx = 0;
             while idx < person.proposals.len() {
@@ -231,8 +225,7 @@ mod DeVote {
             return proposals;
         }
         fn create_proposal(ref self: ContractState, proposal_id: felt252, name: felt252) {
-            let id_number = get_id_by_wallet(@self);
-            let person = self.persons.entry(id_number);
+            let person = self.persons.entry(get_caller_address());
             if person.role.read() == 0 {
                 self
                     .emit(
@@ -252,9 +245,9 @@ mod DeVote {
             proposal.has_voted.write(0);
 
             let temporal_voter = ProposalVoterStruct { has_voted: false, role: 3 };
-            proposal.voters.entry(id_number).write(temporal_voter);
+            proposal.voters.entry(person.id_number.read()).write(temporal_voter);
 
-            let mut proposal_creator = self.persons.entry(id_number);
+            let mut proposal_creator = self.persons.entry(get_caller_address());
             let temp = PersonProposalStruct { proposal_id: proposal_id, role: 3 };
             proposal_creator.proposals.append().write(temp);
 
@@ -282,7 +275,7 @@ mod DeVote {
                 idx += 1;
             };
 
-            let id_number = get_id_by_wallet_id(self, connected_walled_id);
+            let person = self.persons.entry(connected_walled_id);
             return ProposalPublic {
                 id: proposal.id.read(),
                 name: proposal.name.read(),
@@ -290,7 +283,7 @@ mod DeVote {
                 total_voters: proposal.total_voters.read(),
                 has_voted: proposal.has_voted.read(),
                 type_votes: votation,
-                voter: proposal.voters.entry(id_number).read(),
+                voter: proposal.voters.entry(person.id_number.read()).read(),
             };
         }
         fn add_voter(ref self: ContractState, proposal_id: felt252, voter_id: felt252) {
@@ -436,7 +429,7 @@ mod DeVote {
             }
         }
         fn vote(ref self: ContractState, proposal_id: felt252, vote_type: felt252) {
-            let id_number = get_id_by_wallet(@self);
+            let person = self.persons.entry(get_caller_address());
             let mut proposal = self.proposals.entry(proposal_id);
             if proposal.state.read() != 1 {
                 self
@@ -449,7 +442,7 @@ mod DeVote {
                     );
                 return;
             }
-            let voter = proposal.voters.entry(id_number);
+            let voter = proposal.voters.entry(person.id_number.read());
             if voter.role.read() == 0 {
                 self
                     .emit(
@@ -554,58 +547,21 @@ mod DeVote {
             };
             return person_list;
         }
-
-        fn get_person_id_by_wallet(
-            self: @ContractState, connected_walled_id: ContractAddress,
-        ) -> felt252 {
-            let id_number = get_id_by_wallet_id(self, connected_walled_id);
-            return id_number;
-        }
     }
 
     fn can_modify_proposal(
         self: @ContractState, proposal_id: felt252, proposal_status: u8,
     ) -> bool {
-        let id_number = get_id_by_wallet(self);
         let proposal = self.proposals.entry(proposal_id);
+        let person = self.persons.entry(get_caller_address());
         if proposal.state.read() != proposal_status {
             return false;
         } else {
-            let voter = proposal.voters.entry(id_number);
+            let voter = proposal.voters.entry(person.id_number.read());
             if voter.role.read() == 3 {
                 return true;
             }
         }
         return false;
-    }
-
-    fn get_id_by_wallet(self: @ContractState) -> felt252 {
-        let mut result: felt252 = '';
-        let mut idx = 0;
-        while idx < self.persons_ids.len() {
-            if let Option::Some(person) = self.persons_ids.get(idx) {
-                let wallet_id = person.wallet_id.read();
-                if wallet_id == get_caller_address() {
-                    result = person.id_number.read();
-                }
-            }
-            idx += 1;
-        };
-        return result;
-    }
-
-    fn get_id_by_wallet_id(self: @ContractState, connected_walled_id: ContractAddress) -> felt252 {
-        let mut result: felt252 = '';
-        let mut idx = 0;
-        while idx < self.persons_ids.len() {
-            if let Option::Some(person) = self.persons_ids.get(idx) {
-                let wallet_id = person.wallet_id.read();
-                if wallet_id == connected_walled_id {
-                    result = person.id_number.read();
-                }
-            }
-            idx += 1;
-        };
-        return result;
     }
 }
