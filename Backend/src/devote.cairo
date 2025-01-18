@@ -60,23 +60,38 @@ pub struct ProposalPublic {
 trait IDeVote<ContractState> {
     fn create_new_person(ref self: ContractState, person_id: felt252);
     fn change_person_rol(ref self: ContractState, new_rol: felt252);
-    fn get_person(self: @ContractState) -> PersonPublic;
-    fn get_person_rol(self: @ContractState) -> felt252;
-    fn get_person_proposals(self: @ContractState) -> Array<PersonProposalStruct>;
+    fn get_person(self: @ContractState, connected_walled_id: ContractAddress) -> PersonPublic;
+    fn get_person_rol(self: @ContractState, connected_walled_id: ContractAddress) -> felt252;
+    fn get_person_proposals(
+        self: @ContractState, connected_walled_id: ContractAddress,
+    ) -> Array<PersonProposalStruct>;
     fn create_proposal(ref self: ContractState, proposal_id: felt252, name: felt252);
-    fn get_proposal(self: @ContractState, proposal_id: felt252) -> ProposalPublic;
+    fn get_proposal(
+        self: @ContractState, proposal_id: felt252, connected_walled_id: ContractAddress,
+    ) -> ProposalPublic;
     fn add_voter(ref self: ContractState, proposal_id: felt252, voter_id: felt252);
     fn modify_voters(ref self: ContractState, proposal_id: felt252, voter_id: felt252, role: u8);
     fn remove_voters(ref self: ContractState, proposal_id: felt252, voter_id: felt252);
     fn add_vote_type(ref self: ContractState, proposal_id: felt252, vote_type: felt252);
     fn remove_vote_type(ref self: ContractState, proposal_id: felt252, vote_type: felt252);
-    fn get_vote_types(self: @ContractState, proposal_id: felt252) -> Array<ProposalVoteTypeStruct>;
+    fn get_vote_types(
+        self: @ContractState, proposal_id: felt252, connected_walled_id: ContractAddress,
+    ) -> Array<ProposalVoteTypeStruct>;
     fn start_votation(ref self: ContractState, proposal_id: felt252);
     fn vote(ref self: ContractState, proposal_id: felt252, vote_type: felt252);
     fn end_votation(ref self: ContractState, proposal_id: felt252);
-    fn view_votation(self: @ContractState, proposal_id: felt252) -> Array<ProposalVoteTypeStruct>;
-    fn view_person_list(self: @ContractState) -> Array<PersonIdStruct>;
-    fn get_all_person_ids(self: @ContractState) -> Array<PersonIdStruct>;
+    fn view_votation(
+        self: @ContractState, proposal_id: felt252, connected_walled_id: ContractAddress,
+    ) -> Array<ProposalVoteTypeStruct>;
+    fn view_person_list(
+        self: @ContractState, connected_walled_id: ContractAddress,
+    ) -> Array<PersonIdStruct>;
+    fn get_all_person_ids(
+        self: @ContractState, connected_walled_id: ContractAddress,
+    ) -> Array<PersonIdStruct>;
+    fn get_person_id_by_wallet(
+        self: @ContractState, connected_walled_id: ContractAddress,
+    ) -> felt252;
 }
 #[starknet::contract]
 mod DeVote {
@@ -179,8 +194,8 @@ mod DeVote {
                     },
                 );
         }
-        fn get_person(self: @ContractState) -> PersonPublic {
-            let id_number = get_id_by_wallet(self);
+        fn get_person(self: @ContractState, connected_walled_id: ContractAddress) -> PersonPublic {
+            let id_number = get_id_by_wallet_id(self, connected_walled_id);
             let person = self.persons.entry(id_number);
 
             let mut proposals = ArrayTrait::<PersonProposalStruct>::new();
@@ -196,13 +211,16 @@ mod DeVote {
                 proposals: proposals,
             };
         }
-        fn get_person_rol(self: @ContractState) -> felt252 {
-            let id_number = get_id_by_wallet(self);
+
+        fn get_person_rol(self: @ContractState, connected_walled_id: ContractAddress) -> felt252 {
+            let id_number = get_id_by_wallet_id(self, connected_walled_id);
             let person = self.persons.entry(id_number);
             return person.role.read();
         }
-        fn get_person_proposals(self: @ContractState) -> Array<PersonProposalStruct> {
-            let id_number = get_id_by_wallet(self);
+        fn get_person_proposals(
+            self: @ContractState, connected_walled_id: ContractAddress,
+        ) -> Array<PersonProposalStruct> {
+            let id_number = get_id_by_wallet_id(self, connected_walled_id);
             let person = self.persons.entry(id_number);
             let mut proposals = ArrayTrait::<PersonProposalStruct>::new();
             let mut idx = 0;
@@ -250,7 +268,9 @@ mod DeVote {
                     },
                 );
         }
-        fn get_proposal(self: @ContractState, proposal_id: felt252) -> ProposalPublic {
+        fn get_proposal(
+            self: @ContractState, proposal_id: felt252, connected_walled_id: ContractAddress,
+        ) -> ProposalPublic {
             let proposal = self.proposals.entry(proposal_id);
             let mut votation = ArrayTrait::<ProposalVoteTypeStruct>::new();
             let mut idx = 0;
@@ -262,7 +282,7 @@ mod DeVote {
                 idx += 1;
             };
 
-            let id_number = get_id_by_wallet(self);
+            let id_number = get_id_by_wallet_id(self, connected_walled_id);
             return ProposalPublic {
                 id: proposal.id.read(),
                 name: proposal.name.read(),
@@ -389,7 +409,7 @@ mod DeVote {
             }
         }
         fn get_vote_types(
-            self: @ContractState, proposal_id: felt252,
+            self: @ContractState, proposal_id: felt252, connected_walled_id: ContractAddress,
         ) -> Array<ProposalVoteTypeStruct> {
             let mut proposals = ArrayTrait::<ProposalVoteTypeStruct>::new();
             let proposal = self.proposals.entry(proposal_id);
@@ -490,7 +510,7 @@ mod DeVote {
             }
         }
         fn view_votation(
-            self: @ContractState, proposal_id: felt252,
+            self: @ContractState, proposal_id: felt252, connected_walled_id: ContractAddress,
         ) -> Array<ProposalVoteTypeStruct> {
             let mut votation = ArrayTrait::<ProposalVoteTypeStruct>::new();
             let proposal = self.proposals.entry(proposal_id);
@@ -505,7 +525,9 @@ mod DeVote {
             return votation;
         }
 
-        fn get_all_person_ids(self: @ContractState) -> Array<PersonIdStruct> {
+        fn get_all_person_ids(
+            self: @ContractState, connected_walled_id: ContractAddress,
+        ) -> Array<PersonIdStruct> {
             let mut person_ids = ArrayTrait::<PersonIdStruct>::new();
             for i in 0..self.persons_ids.len() {
                 person_ids.append(self.persons_ids.at(i).read());
@@ -513,7 +535,9 @@ mod DeVote {
             person_ids
         }
 
-        fn view_person_list(self: @ContractState) -> Array<PersonIdStruct> {
+        fn view_person_list(
+            self: @ContractState, connected_walled_id: ContractAddress,
+        ) -> Array<PersonIdStruct> {
             let mut person_list = ArrayTrait::<PersonIdStruct>::new();
             let mut idx = 0;
             while idx < self.persons_ids.len() {
@@ -529,6 +553,13 @@ mod DeVote {
                 idx += 1;
             };
             return person_list;
+        }
+
+        fn get_person_id_by_wallet(
+            self: @ContractState, connected_walled_id: ContractAddress,
+        ) -> felt252 {
+            let id_number = get_id_by_wallet_id(self, connected_walled_id);
+            return id_number;
         }
     }
 
@@ -555,6 +586,21 @@ mod DeVote {
             if let Option::Some(person) = self.persons_ids.get(idx) {
                 let wallet_id = person.wallet_id.read();
                 if wallet_id == get_caller_address() {
+                    result = person.id_number.read();
+                }
+            }
+            idx += 1;
+        };
+        return result;
+    }
+
+    fn get_id_by_wallet_id(self: @ContractState, connected_walled_id: ContractAddress) -> felt252 {
+        let mut result: felt252 = '';
+        let mut idx = 0;
+        while idx < self.persons_ids.len() {
+            if let Option::Some(person) = self.persons_ids.get(idx) {
+                let wallet_id = person.wallet_id.read();
+                if wallet_id == connected_walled_id {
                     result = person.id_number.read();
                 }
             }
