@@ -26,7 +26,7 @@ import { useParams } from "next/navigation";
 export default function VotingStationPage() {
   const [selectedOption, setSelectedOption] = useState<string>("");
   const [proposal, setProposal] = useState<ProposalPublic>();
-  const { getProposal } = useContractCustom();
+  const { getProposal, vote } = useContractCustom();
   const [votingOptions, setVotingOptions] = useState<ProposalVoteTypeStruct[]>(
     []
   );
@@ -41,10 +41,17 @@ export default function VotingStationPage() {
     fetchData();
   }, [params.id]);
 
-  const handleVote = () => {
+  const handleVote = async () => {
     if (selectedOption) {
       // Here you would typically send the vote to your backend
       console.log(`Voted for option: ${selectedOption}`);
+      const result = await vote(params.id, selectedOption);
+      console.log("Result votation", result);
+      if (!!proposal)
+        setProposal({
+          ...proposal,
+          voter: { has_voted: true, role: proposal?.voter.role ?? 0 },
+        });
     }
   };
 

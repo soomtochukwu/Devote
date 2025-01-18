@@ -1,6 +1,11 @@
 import { PersonProposalStruct, PersonPublic } from "@/interfaces/Person";
 import { ProposalPublic, ProposalVoteTypeStruct } from "@/interfaces/Proposal";
-import { Abi, useContract } from "@starknet-react/core";
+import {
+  Abi,
+  StarknetTypedContract,
+  useAccount,
+  useContract,
+} from "@starknet-react/core";
 import { shortString } from "starknet";
 const contractAddress =
   "0x01424945ceb915f35dd1bb94c83222bdcc4405ef1aedbfc0d79b41091be1f9c0";
@@ -440,6 +445,7 @@ export function useContractCustom() {
     abi: abi,
     address: contractAddress,
   });
+  const { account } = useAccount();
 
   const getPersonProposals = async (): Promise<PersonProposalStruct[]> => {
     const result: PersonProposalStruct[] =
@@ -484,6 +490,10 @@ export function useContractCustom() {
   };
 
   const vote = async (proposal_id: string, vote_type: string) => {
+    if (!account) {
+      throw new Error("Account not connected");
+    }
+    contract?.connect(account);
     const result = await contract?.vote(proposal_id, vote_type);
     console.log(result);
     return result;
