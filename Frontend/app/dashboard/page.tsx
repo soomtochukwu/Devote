@@ -10,27 +10,6 @@ import { useEffect, useState } from "react";
 import { useContractCustom } from "@/hooks/use-contract";
 import { ProposalPublic } from "@/interfaces/Proposal";
 
-const activeVotingsHardCoded = [
-  {
-    id: 1,
-    name: "City Park Renovation",
-    description:
-      "Vote on the proposed designs for the central park renovation.",
-  },
-  {
-    id: 2,
-    name: "Public Transportation Expansion",
-    description:
-      "Choose between different plans for expanding the city's public transportation.",
-  },
-  {
-    id: 3,
-    name: "Education Budget Allocation",
-    description:
-      "Decide on the allocation of the education budget for the next fiscal year.",
-  },
-];
-
 export default function DashboardPage() {
   const [activeVotings, setActiveVotings] = useState<ProposalPublic[]>([]);
   const { getMyProposals } = useContractCustom();
