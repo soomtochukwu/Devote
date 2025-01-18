@@ -44,19 +44,17 @@ export default function ResultsPage() {
                       <span>{option.vote_type}</span>
                       <span>{option.count} votes</span>
                     </div>
-                    <Progress
-                      value={(option.count / voting.total_voters) * 50}
-                      className="h-2 bg-gray-700"
-                    >
+                    <div className="w-full rounded-full h-2.5 mb-4 bg-gray-700">
                       <div
-                        className="h-full bg-orange-500"
+                        className="h-2.5 rounded-full"
                         style={{
+                          backgroundColor: "#f7cf1d",
                           width: `${
-                            (option.count / voting.total_voters) * 50
+                            (option.count / voting.total_voters) * 100
                           }%`,
                         }}
-                      />
-                    </Progress>
+                      ></div>
+                    </div>
                   </div>
                 ))}
               </CardContent>

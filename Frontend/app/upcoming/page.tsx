@@ -7,19 +7,6 @@ import { useContractCustom } from "@/hooks/use-contract";
 import { useEffect, useState } from "react";
 import { ProposalPublic } from "@/interfaces/Proposal";
 
-const upcomingVotings = [
-  {
-    id: 1,
-    name: "City Council Election",
-    description: "Elect new members for the city council.",
-  },
-  {
-    id: 2,
-    name: "School Board Election",
-    description: "Choose representatives for the local school board.",
-  },
-];
-
 export default function UpcomingVotingsPage() {
   const { getMyProposals } = useContractCustom();
   const [upcomingVotings, setUpcomingVotings] = useState<ProposalPublic[]>([]);

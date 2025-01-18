@@ -46,39 +46,25 @@ export default function PastResultsPage() {
                   <div key={option.vote_type} className="mb-4">
                     <div className="flex justify-between mb-1 text-white">
                       <span>{option.vote_type}</span>
-                      <span>{(option.count / voting.total_voters) * 50}%</span>
+                      <span>{(option.count / voting.total_voters) * 100}%</span>
                     </div>
-                    <Progress
-                      value={(option.count / voting.total_voters) * 50}
-                      className="h-2 bg-gray-700"
-                    >
+                    <div className="w-full rounded-full h-2.5 mb-4 bg-gray-700">
                       <div
-                        className="h-full bg-orange-500"
+                        className="h-2.5 rounded-full"
                         style={{
+                          backgroundColor: "#f7cf1d",
                           width: `${
-                            (option.count / voting.total_voters) * 50
+                            (option.count / voting.total_voters) * 100
                           }%`,
                         }}
-                      />
-                    </Progress>
+                      ></div>
+                    </div>
                   </div>
                 ))}
               </CardContent>
             </Card>
           ))}
         </div>
-        {/*<Card className="mt-8 bg-gray-900 border-[#f7cf1d]">
-          <CardHeader>
-            <CardTitle className="text-[#f7cf1d]">
-              Historical Participation Statistics
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-white">
-            <p>Total Registered Voters: {participationStats.totalVoters}</p>
-            <p>Active Voters: {participationStats.activeVoters}</p>
-            <p>Average Turnout: {participationStats.averageTurnout}</p>
-          </CardContent>
-        </Card>*/}
       </main>
       <Footer />
     </div>
