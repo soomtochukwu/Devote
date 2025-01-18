@@ -64,4 +64,6 @@ DeVote addresses these challenges with an innovative, blockchain-powered platfor
 ---
 
 🌟 DeVote is not just a dApp but a movement towards creating a world where every voice matters and decisions are made collectively, transparently, and securely.
+
+
 Trust. Vote. Transform.
