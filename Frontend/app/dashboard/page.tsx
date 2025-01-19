@@ -34,9 +34,9 @@ export default function DashboardPage() {
           Active Votings
         </h1>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-1">
           <div className="lg:col-span-2">
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-3">
               {activeVotings.map((voting) => (
                 <Card
                   key={voting.id}
@@ -61,9 +61,6 @@ export default function DashboardPage() {
                 </Card>
               ))}
             </div>
-          </div>
-          <div className="lg:col-span-1">
-            <AIAgent />
           </div>
         </div>
       </main>
