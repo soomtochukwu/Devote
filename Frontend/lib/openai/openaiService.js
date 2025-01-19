@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const openaiApiKey = process.env.OPENAI_API_KEY;
+const openaiApiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
 const openaiApiUrl = 'https://api.openai.com/v1/chat/completions';
 
 const customJsonSchema = {
