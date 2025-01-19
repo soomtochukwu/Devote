@@ -41,7 +41,7 @@ const AIAgent: React.FC<AIAgentProps> = ({ proposalId }) => {
         },
         body: JSON.stringify({
           start: true,
-          lng: "es",
+          lng: "en",
           sessionId: "",
           userMessage: "",
           proposalId: proposalId,
@@ -85,7 +85,7 @@ const AIAgent: React.FC<AIAgentProps> = ({ proposalId }) => {
         },
         body: JSON.stringify({
           start: false,
-          lng: "es",
+          lng: "en",
           sessionId: sessionId,
           userMessage: userMessage,
           proposalId: proposalId,
