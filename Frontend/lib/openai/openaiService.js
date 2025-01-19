@@ -1,10 +1,10 @@
-import axios from 'axios';
-import dotenv from 'dotenv';
+import axios from "axios";
+import dotenv from "dotenv";
 
 dotenv.config();
 
-const openaiApiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
-const openaiApiUrl = 'https://api.openai.com/v1/chat/completions';
+const openaiApiKey = process.env.OPENAI_API_KEY;
+const openaiApiUrl = "https://api.openai.com/v1/chat/completions";
 
 const customJsonSchema = {
   type: "object",
@@ -14,7 +14,7 @@ const customJsonSchema = {
     providingDetails: { type: "boolean" },
     textResponse: { type: "string" },
   },
-  required: ["textResponse", "hasContext", "hasVoted", "providingDetails"]
+  required: ["textResponse", "hasContext", "hasVoted", "providingDetails"],
 };
 
 export const generateResponse = async (messages) => {
@@ -22,15 +22,16 @@ export const generateResponse = async (messages) => {
     const response = await axios.post(
       openaiApiUrl,
       {
-        model: 'gpt-3.5-turbo',
+        model: "gpt-3.5-turbo",
         messages,
         max_tokens: 150,
         functions: [
           {
             name: "generate_custom_structure",
             parameters: customJsonSchema,
-            description: "Generate a response adhering to the custom structure defined by the JSON schema.",
-          }
+            description:
+              "Generate a response adhering to the custom structure defined by the JSON schema.",
+          },
         ],
         function_call: {
           name: "generate_custom_structure",
@@ -38,8 +39,8 @@ export const generateResponse = async (messages) => {
       },
       {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openaiApiKey}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${openaiApiKey}`,
         },
       }
     );
@@ -47,8 +48,10 @@ export const generateResponse = async (messages) => {
     // Return the structured data
     return response.data.choices[0].message.function_call.arguments;
   } catch (error) {
-    console.error('Error generating response:', error.response ? error.response.data : error.message);
+    console.error(
+      "Error generating response:",
+      error.response ? error.response.data : error.message
+    );
     throw error;
   }
 };
-
