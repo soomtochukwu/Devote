@@ -1,17 +1,29 @@
 "use client";
 
-import { useEffect } from "react";
+import { use, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
-import { useAccount, useDisconnect } from "@starknet-react/core";
+import { useDisconnect } from "@starknet-react/core";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@/hooks/use-wallet";
+import { User } from "lucide-react";
+import { useContractCustom } from "@/hooks/use-contract";
+import { PersolRol } from "@/interfaces/Person";
 
 export default function Header() {
   const { disconnect } = useDisconnect();
-  const { smallAddress, isDisconnected } = useWallet();
+  const { smallAddress, isDisconnected, address } = useWallet();
+  const { getPersonRol } = useContractCustom();
   const router = useRouter();
+  const [walletRol, setWalletRol] = useState<PersolRol>(PersolRol.user);
 
   useEffect(() => {
     if (isDisconnected) router.push("/");
@@ -22,6 +34,15 @@ export default function Header() {
     disconnect();
     router.push("/");
   };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!address) return;
+      const rol = await getPersonRol(address);
+      setWalletRol(rol);
+    };
+    if (address) fetchData();
+  }, [address]);
 
   return (
     <header className="bg-black shadow border-b border-[#f7cf1d]">
@@ -57,13 +78,26 @@ export default function Header() {
           >
             <Link href="/results">Results</Link>
           </Button>
-          <Button
-            variant="ghost"
-            className="text-gray-300 hover:text-[#f7cf1d]"
-            asChild
-          >
-            <Link href="/verify">Verify</Link>
-          </Button>
+
+          {walletRol === PersolRol.admin && (
+            <Button
+              variant="ghost"
+              className="text-gray-300 hover:text-[#f7cf1d]"
+              asChild
+            >
+              <Link href="/admin">Admin</Link>
+            </Button>
+          )}
+
+          {walletRol === PersolRol.noUser && (
+            <Button
+              variant="ghost"
+              className="text-gray-300 hover:text-[#f7cf1d]"
+              asChild
+            >
+              <Link href="/verify">Verify</Link>
+            </Button>
+          )}
           {smallAddress}
           <Button
             variant="link"
@@ -72,6 +106,26 @@ export default function Header() {
           >
             Disconnect
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src="/placeholder.svg" alt="Profile" />
+                  <AvatarFallback>
+                    <User className="h-4 w-4" />
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuItem asChild>
+                <Link href="/user-settings">Settings</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/">Logout</Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </nav>
     </header>
