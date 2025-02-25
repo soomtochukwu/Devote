@@ -9,23 +9,56 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { braavos, useAccount, useConnect } from "@starknet-react/core";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useWallet } from "@/hooks/use-wallet";
+import { loginStatus } from "@/interfaces/Login";
+import { User } from "@/interfaces/User";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function LoginPage() {
   const router = useRouter();
 
-  const { address, isDisconnected, isConnected } = useAccount();
-  const { connect } = useConnect();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const { connectWallet, connectionStatus } = useWallet();
+  const { toast } = useToast();
 
-  const handleConnectWallet = () => {
-    connect({ connector: braavos() });
-    console.log("conecting wallet");
-    router.push("/dashboard");
+  const handleLogin = async () => {
+    try {
+      const encodedEmail = encodeURIComponent(email);
+      const res = await fetch(`/api/login/${encodedEmail}`);
+      const user: User = await res.json();
+      console.log("User data:", user);
+      if (user?.secretKey && user?.walletId) {
+        console.log("conecting wallet");
+        connectWallet(user.secretKey, password, user.walletId);
+      } else {
+        toast({
+          title: "Error",
+          description: "Error logging in",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error logging in:", error);
+      toast({
+        title: "Error",
+        description: "Error logging in",
+        variant: "destructive",
+      });
+    }
   };
+
+  useEffect(() => {
+    if (connectionStatus === loginStatus.CONNECTED) {
+      router.push("/dashboard");
+    }
+  }, [connectionStatus]);
 
   return (
     <div className="min-h-screen flex flex-col bg-black text-gray-100">
@@ -40,7 +73,7 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {isDisconnected ? (
+            {/*isDisconnected ? (
               <Button
                 onClick={handleConnectWallet}
                 className="w-full bg-[#f7cf1d] text-black hover:bg-[#e5bd0e]"
@@ -52,7 +85,38 @@ export default function LoginPage() {
                 <p className="text-sm text-gray-400">Connected Wallet:</p>
                 <p className="text-[#f7cf1d] font-mono">{address}</p>
               </div>
-            )}
+            )*/}
+            {
+              <div className="space-y-2">
+                <Label className="text-gray-400" htmlFor="email">
+                  User Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-gray-800 border-gray-700 text-white"
+                />
+                <Label className="text-gray-400" htmlFor="email">
+                  Password
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-gray-800 border-gray-700 text-white"
+                />
+              </div>
+            }
+            <Button
+              className="w-full bg-[#f7cf1d] text-black hover:bg-[#e5bd0e]"
+              onClick={handleLogin}
+              disabled={!email || !password}
+            >
+              Login
+            </Button>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <p className="text-sm text-gray-400 text-center">

@@ -1,21 +1,87 @@
-import { useAccount } from "@starknet-react/core";
-import * as React from "react";
+import { loginStatus } from "@/interfaces/Login";
+import {
+  encryptData,
+  getDecryptedPrivateKey,
+} from "@/lib/starknet/createWallet";
+import { useEffect, useState } from "react";
+import { Account, RpcProvider } from "starknet";
 
 export function useWallet() {
-  const { address, isConnected, isDisconnected } = useAccount();
-  const [smallAddress, setSmallAddress] = React.useState("");
+  const [connectionStatus, setConnectionStatus] = useState<loginStatus>(
+    loginStatus.PENDING
+  );
+  const [address, setAddress] = useState<string | undefined>(undefined);
+  const [account, setAccount] = useState<Account | undefined>(undefined);
 
-  React.useEffect(() => {
-    if (isConnected && address) {
-      setSmallAddress(address.slice(0, 6) + "..." + address.slice(-4));
+  useEffect(() => {
+    const cachedKey = localStorage.getItem("encryptedPrivateKey");
+    const cachedAccountAddress = localStorage.getItem("publicKey");
+
+    if (cachedKey && cachedAccountAddress) {
+      connectWallet(cachedKey, "secret", cachedAccountAddress);
+    } else {
+      setConnectionStatus(loginStatus.DISCONECTED);
     }
-  }, [address, isConnected]);
+  }, []);
 
-  React.useEffect(() => {
-    if (isDisconnected) {
-      setSmallAddress("");
+  const connectWallet = (
+    encryptedPrivateKey: string,
+    pin: string,
+    accountAddress: string
+  ) => {
+    const provider = new RpcProvider({
+      nodeUrl:
+        "https://starknet-sepolia.g.alchemy.com/starknet/version/rpc/v0_7/IQNV8HbIxfgGVkxJZyazEK38KIgLQCIn",
+    });
+    if (accountAddress && account) {
+      setConnectionStatus(loginStatus.CONNECTED);
+    } else {
+      // initialize existing account
+      try {
+        const decryptedPrivateKey = getDecryptedPrivateKey(
+          encryptedPrivateKey,
+          pin
+        );
+        console.log("Decrypted private key", decryptedPrivateKey);
+        const account = new Account(
+          provider,
+          accountAddress,
+          decryptedPrivateKey
+        );
+        if (account) {
+          console.log("Account initialized", account);
+          setAddress(accountAddress);
+          setConnectionStatus(loginStatus.CONNECTED);
+          setAccount(account);
+
+          const newEncryptedPrivateKey = encryptData(
+            decryptedPrivateKey,
+            "secret"
+          );
+
+          localStorage.setItem("encryptedPrivateKey", newEncryptedPrivateKey);
+          localStorage.setItem("publicKey", accountAddress);
+        }
+      } catch (error) {
+        console.error("Error initializing account", error);
+        setConnectionStatus(loginStatus.ERROR);
+      }
     }
-  }, [isDisconnected]);
+  };
 
-  return { address, isConnected, isDisconnected, smallAddress };
+  const disconnectWallet = () => {
+    setConnectionStatus(loginStatus.DISCONECTED);
+    setAddress(undefined);
+    setAccount(undefined);
+    localStorage.removeItem("encryptedPrivateKey");
+    localStorage.removeItem("publicKey");
+  };
+
+  return {
+    connectWallet,
+    disconnectWallet,
+    connectionStatus,
+    address,
+    account,
+  };
 }
