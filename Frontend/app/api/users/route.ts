@@ -73,7 +73,7 @@ export async function POST(req: Request) {
     await newUser.save();
 
     const emailEncoded = encodeURI(newUser.email);
-    const sdkLink = `http://localhost:3000/verify?kycId=${newUser._id}&email=${emailEncoded}`
+    const sdkLink = `http://localhost:3000/verification-summitted?kycId=${newUser._id}&email=${emailEncoded}`
 
     const emailService = new EmailService();
     const subject = "Complete your KYC process";
@@ -93,5 +93,16 @@ export async function POST(req: Request) {
       { message: "Internal server error" },
       { status: 500 }
     );
+  }
+}
+
+export async function GET(req: Request) {
+  try {
+    await connectToDb();
+    const users = await User.find({}).lean().exec();
+    return NextResponse.json({ users }, { status: 200 });
+  } catch (error: any) {
+    console.error("Error retrieving users:", error);
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
 }
