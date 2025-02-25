@@ -2,11 +2,19 @@
 
 import { Button } from "@/components/ui/button";
 import { useContractCustom } from "@/hooks/use-contract";
-import { generateAndDeployNewWalletFromPrivateKey } from "@/lib/starknet/createWallet";
-import { UserCog, UserPlus } from "lucide-react";
+import { useEth } from "@/hooks/use-eth";
+import {
+  decryptData,
+  encryptData,
+  generateAndDeployNewWalletFromPrivateKey,
+  generatePrivateKeyEncrypted,
+  getFutureWalletAdressFromPrivateKey,
+} from "@/lib/starknet/createWallet";
+import { UserPlus } from "lucide-react";
 
 export default function SecretPage() {
-  const { createAdminOnChain } = useContractCustom();
+  const { createAdminOnChain, addWhiteList, vote } = useContractCustom();
+  const { getEthBalance, sendEth } = useEth();
 
   const handleCreateUser = async () => {
     const result = await createAdminOnChain("1161616161");
@@ -21,6 +29,23 @@ export default function SecretPage() {
       return;
     }
     generateAndDeployNewWalletFromPrivateKey(cachedKey, "secret");
+  };
+
+  const handleCreateEphimeralWallet = async () => {
+    const privateKey = generatePrivateKeyEncrypted("secret");
+    const publicKey = getFutureWalletAdressFromPrivateKey(privateKey, "secret");
+    const amount = await getEthBalance();
+    console.log("Amount", amount);
+    const send = await sendEth(publicKey);
+    console.log("Send", send);
+    const deploy = await generateAndDeployNewWalletFromPrivateKey(
+      privateKey,
+      "secret"
+    );
+    const secretForWhiteList = encryptData(publicKey, "secret");
+    const secretKeyDecrypted = decryptData(privateKey, "secret");
+    await addWhiteList("foo", secretForWhiteList);
+    await vote("foo", "1", secretForWhiteList, secretKeyDecrypted, publicKey);
   };
 
   return (
