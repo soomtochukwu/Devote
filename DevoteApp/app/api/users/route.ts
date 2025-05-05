@@ -27,13 +27,13 @@ export async function POST(req: Request) {
 
     await connectToDb();
 
-    const citizen = await Citizen.findOne({ ine }).exec();
-    if (!citizen) {
-      return NextResponse.json(
-        { message: "Citizen not found with provided ine" },
-        { status: 404 }
-      );
-    }
+    // const citizen = await Citizen.findOne({ ine }).exec();
+    // if (!citizen) {
+    //   return NextResponse.json(
+    //     { message: "Citizen not found with provided ine" },
+    //     { status: 404 }
+    //   );
+    // }
 
     const hashedIne = hashIne(ine);
 
@@ -45,7 +45,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const name = `${citizen.firstName} ${citizen.lastName}`;
+    // const name = `${citizen.firstName} ${citizen.lastName}`;
 
     const privateKey = generatePrivateKeyEncrypted("1234");
 
@@ -56,30 +56,31 @@ export async function POST(req: Request) {
 
     const newUser = new User({
       walletId: walletAddress,
-      name,
+      // name,
       email,
-      hashIne: hashedIne,
-      kycStatus: "pending",
-      kycId: "",
+      // hashIne: hashedIne,
+      // kycStatus: "pending",
+      // kycId: "",
       secretKey: privateKey,
     });
 
     await newUser.save();
 
-    const kycId = await createKyc(String(newUser._id), newUser.email);
+    // const kycId = await createKyc(String(newUser._id), newUser.email);
 
-    newUser.kycId = kycId;
+    // newUser.kycId = kycId;
 
     await newUser.save();
 
     const emailEncoded = encodeURI(newUser.email);
-    const sdkLink = `https://devote.site/verify?kycId=${newUser._id}&email=${emailEncoded}`;
+    const sdkLink = `https://devote.site/verify?kycId=${newUser._id}&email=${emailEncoded}`,
+      url = "",
+      userId = "";
 
     const emailService = new EmailService();
     const subject = "Complete your KYC process";
     const text = `Please use the following link to complete your KYC process: ${sdkLink}`;
-    const html = `<p>Please use the following link to complete your KYC process:</p>
-                  <p><a href="${sdkLink}">${sdkLink}</a></p>`;
+    const html = `<p>A user account has been created for you. Please click the following link to set your password: ${url}/verification-submitted?id=${userId}</p>`;
 
     await emailService.sendMail(newUser.email, subject, text, html);
 
